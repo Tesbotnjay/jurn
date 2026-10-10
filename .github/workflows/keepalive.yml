@@ -1,0 +1,20 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Berjalan setiap 2 hari sekali pada jam 00:00 UTC (jam 7 pagi WIB)
+    - cron: '0 0 */2 * *'
+  workflow_dispatch: # Mengizinkan eksekusi manual lewat tombol di GitHub
+
+jobs:
+  ping-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Vercel API
+        # Perintah ini akan "menembak" endpoint API publik website Anda.
+        # Karena endpoint ini mengambil data dari Supabase, maka Supabase akan 
+        # mencatat ini sebagai "aktivitas", sehingga proyek Anda tidak akan pernah tertidur.
+        run: |
+          echo "Menjaga Supabase tetap aktif..."
+          curl -sSf https://four-k9k4.vercel.app/api/public/broadcasts > /dev/null
+          echo "Berhasil mem-ping API!"
