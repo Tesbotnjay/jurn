@@ -81,18 +81,19 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                       maxLines: 3,
                     ),
                     const SizedBox(height: 16),
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text('Pilih Anggota:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                    const SizedBox(height: 8),
                     TextField(
                       controller: driveCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Link Google Drive (opsional)',
                         hintText: 'https://drive.google.com/...',
                         border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.link),
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('Pilih Anggota:', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                     const SizedBox(height: 8),
                     ...members.map((m) {
@@ -145,20 +146,37 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                       return;
                     }
 
-                    await SupabaseService.createAssignment(
-                      title: titleController.text.trim(),
-                      description: descController.text.trim(),
-                      divisi: _currentMember!.divisi!,
-                      memberIds: selectedMemberIds.toList(),
-                    );
+                    try {
+                      await SupabaseService.createAssignment(
+                        title: titleController.text.trim(),
+                        description: descController.text.trim(),
+                        divisi: _currentMember!.divisi!,
+                        memberIds: selectedMemberIds.toList(),
+                      );
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Gagal membuat penugasan: $e')),
+                        );
+                      }
+                      return;
+                    }
 
                     if (link != null) {
-                      await SupabaseService.createDriveLink(
-                        title: link.title,
-                        driveUrl: link.driveUrl,
-                        description: link.description,
-                        divisiOwner: link.divisiOwner,
-                      );
+                      try {
+                        await SupabaseService.createDriveLink(
+                          title: link.title,
+                          driveUrl: link.driveUrl,
+                          description: link.description,
+                          divisiOwner: link.divisiOwner,
+                        );
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Penugasan dibuat, tapi link Drive gagal: $e')),
+                          );
+                        }
+                      }
                     }
 
                     if (context.mounted) {
@@ -208,14 +226,51 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                             Text('Instruksi: ${item.description}', style: const TextStyle(color: Colors.white70)),
                           ],
                         ),
-                        trailing: Chip(
-                          label: Text(
-                            item.status.toUpperCase(),
-                            style: const TextStyle(fontSize: 10, color: Colors.white),
-                          ),
-                          backgroundColor: item.status == 'completed'
-                              ? Colors.green
-                              : (item.status == 'in_progress' ? Colors.orange : Colors.grey),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (item.status != 'completed')
+                              IconButton(
+                                icon: const Icon(Icons.check_circle_outline, color: Colors.green),
+                                onPressed: () async {
+                                  await SupabaseService.updateAssignmentStatus(item.id, 'completed');
+                                  _loadData();
+                                },
+                                tooltip: 'Tandai Selesai',
+                              ),
+                            if (_currentMember?.isKoor == true || _currentMember?.role == 'admin')
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                onPressed: () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Hapus Tugas'),
+                                      content: const Text('Yakin ingin menghapus tugas ini?'),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+                                        TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus', style: TextStyle(color: Colors.red))),
+                                      ],
+                                    ),
+                                  );
+                                  if (confirm == true) {
+                                    await SupabaseService.deleteAssignment(item.id);
+                                    _loadData();
+                                  }
+                                },
+                                tooltip: 'Hapus Tugas',
+                              ),
+                            const SizedBox(width: 8),
+                            Chip(
+                              label: Text(
+                                item.status.toUpperCase(),
+                                style: const TextStyle(fontSize: 10, color: Colors.white),
+                              ),
+                              backgroundColor: item.status == 'completed'
+                                  ? Colors.green
+                                  : (item.status == 'in_progress' ? Colors.orange : Colors.grey),
+                            ),
+                          ],
                         ),
                       ),
                     );

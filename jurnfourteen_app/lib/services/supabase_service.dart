@@ -201,6 +201,13 @@ class SupabaseService {
         .eq('id', assignmentId);
   }
 
+  static Future<void> deleteAssignment(String assignmentId) async {
+    await client
+        .from('assignments')
+        .delete()
+        .eq('id', assignmentId);
+  }
+
   // Drive Links
   static Future<List<DriveLink>> getDriveLinks() async {
     final response = await client
