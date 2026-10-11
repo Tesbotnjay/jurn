@@ -4,6 +4,7 @@ import '../../../services/supabase_service.dart';
 import '../../../models/member.dart';
 import '../../main.dart';
 import '../../../models/dashboard_summary.dart';
+import '../../../models/attendance_record.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -17,6 +18,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _activities = [];
   DashboardSummary? _summary;
+  final Map<String, AttendanceRecord> _statusByActivity = {};
 
   @override
   void initState() {
@@ -28,13 +30,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final member = await SupabaseService.getCurrentMember();
     final activities = await SupabaseService.getUpcomingActivities();
     final attendance = await SupabaseService.getMyAttendanceRows();
+    final records = await SupabaseService.getMyAttendanceRecords();
     if (!mounted) return;
     setState(() {
       _member = member;
       _activities = activities.take(5).toList();
       _summary = DashboardSummary.fromAttendance(attendance);
+      _statusByActivity
+        ..clear()
+        ..addEntries(records.map((r) => MapEntry(r.activityId, r)));
       _isLoading = false;
     });
+  }
+
+  Widget _statusChip(AttendanceRecord? r) {
+    if (r == null) {
+      return const Text('Belum absen',
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textMuted));
+    }
+    final color = r.isApproved
+        ? AppColors.secondary
+        : r.isRejected
+            ? AppColors.accent
+            : AppColors.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color,
+        border: Border.all(color: Colors.black, width: 2),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(r.statusLabel,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.black)),
+    );
   }
 
   Widget _stat(String label, String value) {
@@ -208,6 +236,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           (a['activity_date'] ?? '').toString(),
                           style: const TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w700),
                         ),
+                        const SizedBox(width: 8),
+                        _statusChip(_statusByActivity[(a['id'] ?? '').toString()]),
                       ],
                     ),
                   ),

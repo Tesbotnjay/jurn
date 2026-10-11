@@ -1,3 +1,4 @@
+import '../models/attendance_record.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/member.dart';
 import '../models/assignment.dart';
@@ -82,6 +83,32 @@ class SupabaseService {
     return List<Map<String, dynamic>>.from(response as List);
   }
 
+  // Fetch full attendance records per activity for detailed status (web parity)
+  static Future<List<AttendanceRecord>> getMyAttendanceForActivity(String activityId) async {
+    final member = await getCurrentMember();
+    if (member == null) return [];
+    final response = await client
+        .from('attendance')
+        .select('id, activity_id, response, final_status, note, submitted_at')
+        .eq('member_id', member.id)
+        .eq('activity_id', activityId);
+    final list = List<Map<String, dynamic>>.from(response as List);
+    return list.map(AttendanceRecord.fromJson).toList();
+  }
+
+  // Fetch all my attendance rows with activity_id for per-activity status
+  static Future<List<AttendanceRecord>> getMyAttendanceRecords() async {
+    final member = await getCurrentMember();
+    if (member == null) return [];
+    final response = await client
+        .from('attendance')
+        .select('id, activity_id, response, final_status, note')
+        .eq('member_id', member.id);
+    return List<Map<String, dynamic>>.from(response as List)
+        .map(AttendanceRecord.fromJson)
+        .toList();
+  }
+
   static Future<void> submitAttendance(String activityId, String responseStatus, {String? note}) async {
     final member = await getCurrentMember();
     if (member == null) return;
@@ -95,12 +122,15 @@ class SupabaseService {
     });
   }
 
-  static Stream<Map<String, dynamic>> watchAttendance(String activityId) {
+  static Stream<List<AttendanceRecord>> watchMyAttendanceForActivity(String activityId, String memberId) {
     return client
         .from('attendance')
         .stream(primaryKey: ['id'])
         .eq('activity_id', activityId)
-        .map((list) => list.isNotEmpty ? list.first : {});
+        .map((list) => list
+            .where((a) => a['member_id'] == memberId)
+            .map(AttendanceRecord.fromJson)
+            .toList());
   }
 
   // Assignments
