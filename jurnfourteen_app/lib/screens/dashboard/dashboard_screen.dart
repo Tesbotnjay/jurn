@@ -74,7 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               _brutalButton('Izinkan', const Color(0xFFFFE66D), () async {
                 Navigator.of(ctx).pop();
                 final granted = await NotificationService.requestPermission();
-                if (!granted!) {
+                if (!granted) {
                   if (!mounted) return;
                   Future.delayed(const Duration(milliseconds: 600), () {
                     if (!mounted) return;
