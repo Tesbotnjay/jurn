@@ -5,6 +5,8 @@ import '../../../models/member.dart';
 import '../../main.dart';
 import '../../../models/dashboard_summary.dart';
 import '../../../models/attendance_record.dart';
+import '../../../models/app_notification.dart';
+import '../../../models/notification_permission_status.dart';
 import '../../../services/realtime_notifier.dart';
 import '../../../services/notification_service.dart';
 
@@ -87,6 +89,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _onBellPressed() async {
+    final enabled = await NotificationService.isEnabled();
+    final status = NotificationPermissionStatus(enabled: enabled);
+    if (!mounted) return;
+    if (enabled) {
+      await NotificationService.show(
+        const AppNotification(
+          title: 'Notifikasi aktif',
+          body: 'Tes berhasil. Anda akan menerima pemberitahuan tugas baru.',
+          payload: 'test:bell',
+        ),
+        DateTime.now().millisecondsSinceEpoch.remainder(1 << 30),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Notifikasi tes dikirim. Cek status bar HP.')),
+        );
+      }
+      return;
+    }
+    final granted = await NotificationService.requestPermission();
+    if (!mounted) return;
+    if (granted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Notifikasi diizinkan.')),
+      );
+      return;
+    }
+    if (status.needsSettings) _showManualInstructions();
   }
 
   void _showManualInstructions() {
@@ -220,12 +253,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: 'Aktifkan notifikasi',
+            tooltip: 'Notifikasi',
             icon: const Icon(Icons.notifications_active_outlined),
-            onPressed: () async {
-              final granted = await NotificationService.requestPermission();
-              if (!granted && mounted) _showManualInstructions();
-            },
+            onPressed: _onBellPressed,
           ),
           IconButton(
             icon: const Icon(Icons.person_outline),
