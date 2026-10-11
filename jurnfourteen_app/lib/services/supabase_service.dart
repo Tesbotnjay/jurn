@@ -232,7 +232,7 @@ class SupabaseService {
     String? description,
   }) async {
     final member = await getCurrentMember();
-    if (member == null) return;
+    if (member == null) throw Exception('Member tidak ditemukan. Login ulang.');
 
     await client.from('drive_links').insert({
       'title': title,

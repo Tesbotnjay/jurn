@@ -91,16 +91,24 @@ class _DriveLinksScreenState extends State<DriveLinksScreen> {
                   return;
                 }
 
-                await SupabaseService.createDriveLink(
-                  title: titleCtrl.text.trim(),
-                  driveUrl: urlCtrl.text.trim(),
-                  divisiOwner: _currentMember?.divisi ?? 'Dokumentasi',
-                  description: descCtrl.text.trim(),
-                );
+                try {
+                  await SupabaseService.createDriveLink(
+                    title: titleCtrl.text.trim(),
+                    driveUrl: urlCtrl.text.trim(),
+                    divisiOwner: _currentMember?.divisi ?? 'Dokumentasi',
+                    description: descCtrl.text.trim(),
+                  );
 
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  _loadData();
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    _loadData();
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal menyimpan: $e')),
+                    );
+                  }
                 }
               },
               child: const Text('SIMPAN'),
