@@ -1,5 +1,8 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../models/app_notification.dart';
+
+const _settingsChannel = MethodChannel('jurnfourteen/settings');
 
 class NotificationService {
   NotificationService._();
@@ -25,14 +28,21 @@ class NotificationService {
   }
 
   static Future<bool> isEnabled() async {
+    await init();
     final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     return (await android?.areNotificationsEnabled()) ?? false;
   }
 
   static Future<bool> requestPermission() async {
+    await init();
     final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     final granted = await android?.requestNotificationsPermission();
-    return granted ?? false;
+    if (granted == true) return true;
+    return await isEnabled();
+  }
+
+  static Future<void> openNotificationSettings() async {
+    await _settingsChannel.invokeMethod<void>('openNotificationSettings');
   }
 
   // Prompt tiap kali app dibuka selama notifikasi belum aktif (tidak permanen).

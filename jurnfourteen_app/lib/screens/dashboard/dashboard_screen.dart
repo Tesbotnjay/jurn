@@ -122,8 +122,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 16),
               _brutalButton('Buka Settings', const Color(0xFF1B365D), () async {
                 Navigator.of(ctx).pop();
-                // Buka settings aplikasi (Android only)
-                // Note: requires package_info_plus + android intent (future)
+                await NotificationService.openNotificationSettings();
               }),
               const SizedBox(height: 8),
               _brutalButton('Tutup', Colors.grey.shade300, () => Navigator.of(ctx).pop()),
@@ -225,7 +224,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: const Icon(Icons.notifications_active_outlined),
             onPressed: () async {
               final granted = await NotificationService.requestPermission();
-              if (!granted) _showManualInstructions();
+              if (!granted && mounted) _showManualInstructions();
             },
           ),
           IconButton(
