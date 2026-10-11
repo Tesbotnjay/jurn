@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../services/supabase_service.dart';
 import '../../../models/assignment.dart';
 import '../../../models/member.dart';
+import '../../../models/task_drive_link.dart';
 
 class AssignmentsScreen extends StatefulWidget {
   const AssignmentsScreen({super.key});
@@ -46,6 +47,7 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
     final members = await SupabaseService.getMembersByDivisi(_currentMember!.divisi!);
     final titleController = TextEditingController();
     final descController = TextEditingController();
+    final driveCtrl = TextEditingController();
     final selectedMemberIds = <String>{};
 
     if (!mounted) return;
@@ -84,6 +86,15 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                       child: Text('Pilih Anggota:', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                     const SizedBox(height: 8),
+                    TextField(
+                      controller: driveCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Link Google Drive (opsional)',
+                        hintText: 'https://drive.google.com/...',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     ...members.map((m) {
                       final isSelected = selectedMemberIds.contains(m.id);
                       return CheckboxListTile(
@@ -119,12 +130,36 @@ class _AssignmentsScreenState extends State<AssignmentsScreen> {
                       return;
                     }
 
+                    late final TaskDriveLink? link;
+                    try {
+                      link = TaskDriveLink.fromTask(
+                        taskTitle: titleController.text.trim(),
+                        url: driveCtrl.text,
+                        description: descController.text.trim(),
+                        divisi: _currentMember!.divisi!,
+                      );
+                    } on FormatException catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(e.message)),
+                      );
+                      return;
+                    }
+
                     await SupabaseService.createAssignment(
                       title: titleController.text.trim(),
                       description: descController.text.trim(),
                       divisi: _currentMember!.divisi!,
                       memberIds: selectedMemberIds.toList(),
                     );
+
+                    if (link != null) {
+                      await SupabaseService.createDriveLink(
+                        title: link.title,
+                        driveUrl: link.driveUrl,
+                        description: link.description,
+                        divisiOwner: link.divisiOwner,
+                      );
+                    }
 
                     if (context.mounted) {
                       Navigator.pop(context);
