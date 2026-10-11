@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'router.dart';
+import 'services/realtime_notifier.dart';
 
 final FlutterLocalNotificationsPlugin notificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -25,6 +26,15 @@ Future<void> main() async {
   await notificationsPlugin.initialize(
     settings: const InitializationSettings(android: androidInit, iOS: iosInit),
   );
+
+  // Auto-listen realtime notifications saat session aktif
+  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    if (data.session != null) {
+      RealtimeNotifier.start();
+    } else {
+      RealtimeNotifier.stop();
+    }
+  });
 
   runApp(const JurnFourteenApp());
 }

@@ -24,9 +24,13 @@ class RealtimeNotifier {
           event: PostgresChangeEvent.insert,
           schema: 'public',
           table: 'assignments',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'assigned_to',
+            value: member.id,
+          ),
           callback: (payload) {
             final row = payload.newRecord;
-            if (row['assigned_to'] != member.id) return;
             _show(AppNotification.fromAssignment(row));
           },
         )
@@ -34,9 +38,13 @@ class RealtimeNotifier {
           event: PostgresChangeEvent.insert,
           schema: 'public',
           table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: userId,
+          ),
           callback: (payload) {
             final row = payload.newRecord;
-            if (row['user_id'] != userId) return;
             _show(AppNotification.fromDatabase(row));
           },
         )

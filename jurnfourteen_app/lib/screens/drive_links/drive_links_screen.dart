@@ -186,9 +186,50 @@ class _DriveLinksScreenState extends State<DriveLinksScreen> {
                                 ),
                               ],
                             ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.open_in_new, color: Colors.blueAccent),
-                              onPressed: () => _openLink(link.driveUrl),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.open_in_new, color: Colors.blueAccent),
+                                  onPressed: () => _openLink(link.driveUrl),
+                                ),
+                                if (_currentMember?.isKoor == true || _currentMember?.role == 'admin')
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                    onPressed: () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text('Hapus Link Drive?'),
+                                          content: Text('Hapus "${link.title}"?'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(ctx, false),
+                                              child: const Text('Batal'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(ctx, true),
+                                              child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+
+                                      if (confirm == true) {
+                                        try {
+                                          await SupabaseService.deleteDriveLink(link.id);
+                                          _loadData();
+                                        } catch (e) {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Gagal menghapus: $e')),
+                                            );
+                                          }
+                                        }
+                                      }
+                                    },
+                                  ),
+                              ],
                             ),
                           ),
                         );
