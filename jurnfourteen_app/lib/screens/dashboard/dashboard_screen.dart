@@ -5,6 +5,8 @@ import '../../../models/member.dart';
 import '../../main.dart';
 import '../../../models/dashboard_summary.dart';
 import '../../../models/attendance_record.dart';
+import '../../../services/realtime_notifier.dart';
+import '../../../services/notification_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -24,6 +26,128 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _loadAll();
+    RealtimeNotifier.start();
+    _checkNotificationPrompt();
+  }
+
+  Future<void> _checkNotificationPrompt() async {
+    if (!mounted) return;
+    final shouldPrompt = await NotificationService.shouldPrompt();
+    if (!shouldPrompt || !mounted) return;
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (!mounted) return;
+      _showNotificationDialog();
+    });
+  }
+
+  void _showNotificationDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: Colors.black, width: 3),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.black, width: 3),
+            boxShadow: const [BoxShadow(offset: Offset(4, 4), color: Colors.black)],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '🔔 Aktifkan Notifikasi',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF1B365D)),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Dapatkan pemberitahuan langsung saat Anda menerima tugas baru atau update kehadiran.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              _brutalButton('Izinkan', const Color(0xFFFFE66D), () async {
+                Navigator.of(ctx).pop();
+                final granted = await NotificationService.requestPermission();
+                if (!granted!) {
+                  if (!mounted) return;
+                  Future.delayed(const Duration(milliseconds: 600), () {
+                    if (!mounted) return;
+                    _showManualInstructions();
+                  });
+                }
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showManualInstructions() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: Colors.black, width: 3),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.black, width: 3),
+            boxShadow: const [BoxShadow(offset: Offset(4, 4), color: Colors.black)],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '📋 Langkah Manual',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1B365D)),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '1. Buka Settings → Apps → JurnFourteen\n2. Ketuk “Notifikasi”\n3. Aktifkan “Izinkan notifikasi”',
+                textAlign: TextAlign.left,
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              _brutalButton('Buka Settings', const Color(0xFF1B365D), () async {
+                Navigator.of(ctx).pop();
+                // Buka settings aplikasi (Android only)
+                // Note: requires package_info_plus + android intent (future)
+              }),
+              const SizedBox(height: 8),
+              _brutalButton('Tutup', Colors.grey.shade300, () => Navigator.of(ctx).pop()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _brutalButton(String label, Color bg, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: bg,
+          border: Border.all(color: Colors.black, width: 3),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: const [BoxShadow(offset: Offset(3, 3), color: Colors.black)],
+        ),
+        child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+      ),
+    );
   }
 
   Future<void> _loadAll() async {
