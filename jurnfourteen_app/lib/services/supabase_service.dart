@@ -237,6 +237,23 @@ class SupabaseService {
     });
   }
 
+  // Broadcasts (pengumuman, sama dengan dashboard web)
+  static Future<List<Map<String, dynamic>>> getRecentBroadcasts({int limit = 3}) async {
+    final response = await client
+        .from('broadcasts')
+        .select('id, title, content, created_at')
+        .order('created_at', ascending: false)
+        .limit(limit);
+    return List<Map<String, dynamic>>.from(response as List);
+  }
+
+  // Admin stats (sama dengan dashboard web admin)
+  static Future<({int total, int pending})> getMemberCounts() async {
+    final all = await client.from('members').select('id');
+    final pending = await client.from('members').select('id').eq('status', 'menunggu');
+    return (total: (all as List).length, pending: (pending as List).length);
+  }
+
   // Realtime subscriptions
   static RealtimeChannel subscribeToAssignments(Function onEvent) {
     return client

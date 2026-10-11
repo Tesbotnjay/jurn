@@ -8,6 +8,7 @@ import 'screens/attendance/attendance_screen.dart';
 import 'screens/assignments/assignments_screen.dart';
 import 'screens/drive_links/drive_links_screen.dart';
 import 'screens/profile/profile_screen.dart';
+import 'screens/broadcasts/broadcasts_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
@@ -18,6 +19,11 @@ final GoRouter appRouter = GoRouter(
     // If not logged in, go to login
     if (session == null) {
       return state.matchedLocation == '/register' ? '/register' : '/login';
+    }
+
+    // Root path has no screen: send to dashboard.
+    if (state.matchedLocation == '/') {
+      return '/dashboard';
     }
 
     // If logged in and trying to access auth pages, go to dashboard
@@ -51,6 +57,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/drive-links',
       builder: (context, state) => const DriveLinksScreen(),
+    ),
+    GoRoute(
+      path: '/broadcasts',
+      builder: (context, state) => const BroadcastsScreen(),
     ),
     GoRoute(
       path: '/profile',

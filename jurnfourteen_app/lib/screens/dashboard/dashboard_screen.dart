@@ -221,6 +221,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: 'Aktifkan notifikasi',
+            icon: const Icon(Icons.notifications_active_outlined),
+            onPressed: () async {
+              final granted = await NotificationService.requestPermission();
+              if (!granted) _showManualInstructions();
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: () => context.push('/profile'),
           ),
@@ -390,6 +398,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisSpacing: 12,
               childAspectRatio: 1.15,
               children: [
+                _buildMenuItem(
+                  context,
+                  title: 'Pengumuman',
+                  subtitle: 'Broadcast terbaru',
+                  icon: Icons.campaign_outlined,
+                  accentColor: AppColors.primaryLt,
+                  route: '/broadcasts',
+                ),
                 _buildMenuItem(
                   context,
                   title: 'Absensi',

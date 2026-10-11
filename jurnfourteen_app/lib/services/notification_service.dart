@@ -1,12 +1,10 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_notification.dart';
 
 class NotificationService {
   NotificationService._();
 
   static final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
-  static const String _promptKey = 'notif_prompt_shown';
   static const String _channelId = 'tugas_channel';
   static bool _initialized = false;
 
@@ -34,15 +32,17 @@ class NotificationService {
   static Future<bool> requestPermission() async {
     final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     final granted = await android?.requestNotificationsPermission();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_promptKey, true);
     return granted ?? false;
   }
 
+  // Prompt tiap kali app dibuka selama notifikasi belum aktif (tidak permanen).
+  static bool _promptedThisLaunch = false;
+
   static Future<bool> shouldPrompt() async {
+    if (_promptedThisLaunch) return false;
     if (await isEnabled()) return false;
-    final prefs = await SharedPreferences.getInstance();
-    return !(prefs.getBool(_promptKey) ?? false);
+    _promptedThisLaunch = true;
+    return true;
   }
 
   static Future<void> show(AppNotification n, int id) async {
